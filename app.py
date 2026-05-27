@@ -51,8 +51,10 @@ if st.button("🚀 Scan Video Now", type="primary"):
     # --- PROCESSING PIPELINE ---
     with st.status("Initializing AI Pipeline...", expanded=True) as status:
         try:
-            status.update(label="🔍 Fetching video data from Frame.io...")
-            file_url = f"https://api.frame.io/v4/files/{file_id}"
+            status.update(label="🔍 Fetching video data from Frame.io (V2 API)...")
+            
+            # FIX 1: Downgrade to V2 Asset Endpoint
+            file_url = f"https://api.frame.io/v2/assets/{file_id}"
             response = requests.get(file_url, headers=FIO_HEADERS)
 
             if response.status_code != 200:
@@ -62,7 +64,10 @@ if st.button("🚀 Scan Video Now", type="primary"):
                 st.stop()
 
             file_data = response.json()
-            proxy_url = file_data.get('proxy_h264') or file_data.get('originals', {}).get('h264')
+            
+            # FIX 2: V2 Proxy Extraction Format
+            downloads = file_data.get('downloads', {})
+            proxy_url = downloads.get('h264_1080') or downloads.get('h264_720') or file_data.get('cover_asset', {}).get('proxy_url')
 
             if not proxy_url:
                 status.update(label="❌ No playable video stream found.", state="error")
@@ -109,9 +114,11 @@ if st.button("🚀 Scan Video Now", type="primary"):
                 target_frame = max(1, int((ms / 1000) * 24))
                 
                 comment_text = f"🤖 AI Spellcheck: Found '{item.get('typo')}'. Did you mean '{item.get('correction')}'?"
-                comment_url = f"https://api.frame.io/v4/files/{file_id}/comments"
                 
-                payload = {"body": comment_text, "timestamp": target_frame}
+                # FIX 3: Downgrade Comment Endpoint to V2 & use 'text' payload
+                comment_url = f"https://api.frame.io/v2/assets/{file_id}/comments"
+                payload = {"text": comment_text, "timestamp": target_frame}
+                
                 c_res = requests.post(comment_url, json=payload, headers=FIO_HEADERS)
                 if c_res.status_code in [200, 201]:
                     success_count += 1
