@@ -58,40 +58,29 @@ if st.button("🚀 Scan Video Now", type="primary"):
         st.stop()
 
     # --- PROCESSING PIPELINE ---
-    with st.status("Bypassing V4 Architecture...", expanded=True) as status:
+    with st.status("Connecting to Make.com Backend...", expanded=True) as status:
         try:
-            status.update(label="🔍 Finding your Workspace Account ID...")
+            status.update(label="🚀 Sending video ID to Make.com...")
             
-            # 1. Fetch Account ID automatically
-            acc_res = requests.get("https://api.frame.io/v4/accounts", headers=FIO_HEADERS)
-            if acc_res.status_code != 200:
-                st.error(f"🚨 Account Auth Error [{acc_res.status_code}]: {acc_res.text}")
-                st.stop()
+            # PASTE YOUR MAKE.COM WEBHOOK URL HERE
+            MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/79v6ja5tbksfrufghjncc18jgcvrlpw6"
+            
+            payload = {
+                "file_id": file_id,
+                "action": "extract_video"
+            }
+            
+            # Send the request to Make
+            response = requests.post(MAKE_WEBHOOK_URL, json=payload)
+
+            if response.status_code == 200:
+                st.success("✅ Successfully connected to the Webhook!")
+                st.write("Make.com received the signal. Check your Make dashboard to see the data!")
+                status.update(label="Signal sent.", state="complete")
+            else:
+                st.error(f"🚨 Webhook Error: {response.text}")
+                status.update(label="❌ Failed to reach Make.com", state="error")
                 
-            # Parse the account ID
-            acc_data = acc_res.json()
-            accounts = acc_data.get("data", [acc_data]) 
-            account_id = accounts[0].get("id")
-            
-            # 2. Fetch File from the strict V4 Endpoint
-            status.update(label=f"🔍 Fetching video data from Account: {account_id}...")
-            file_url = f"https://api.frame.io/v4/accounts/{account_id}/files/{file_id}"
-            response = requests.get(file_url, headers=FIO_HEADERS)
-
-            if response.status_code != 200:
-                st.error(f"🚨 Frame.io API Error [{response.status_code}]: {response.text}")
-                st.warning(f"🔍 Debug Info - File ID: {file_id} | Account ID: {account_id}")
-                status.update(label="❌ Failed to access Frame.io", state="error")
-                st.stop()
-
-            file_data = response.json()
-            
-            # 3. DUMP THE JSON DATA
-            st.success("✅ V4 Connection Successful! Frame.io accepted the token.")
-            st.write("We just bypassed the firewall! To finish the app, we need to see exactly where Adobe hides the .mp4 link in their new V4 database layout.")
-            st.json(file_data)
-            
-            status.update(label="Paused for mapping...", state="complete")
             st.stop()
 
         except Exception as e:
