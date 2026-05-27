@@ -56,7 +56,8 @@ if st.button("🚀 Scan Video Now", type="primary"):
             response = requests.get(file_url, headers=FIO_HEADERS)
 
             if response.status_code != 200:
-                st.error(f"Frame.io Access Error: Make sure the link is correct.")
+                st.error(f"🚨 Frame.io API Error [{response.status_code}]: {response.text}")
+                st.warning(f"🔍 Debug Info - The ID we extracted was: {file_id}")
                 status.update(label="❌ Failed to access Frame.io", state="error")
                 st.stop()
 
