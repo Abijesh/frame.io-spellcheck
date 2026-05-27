@@ -28,11 +28,21 @@ FIO_HEADERS = {
 }
 
 def extract_file_id(url):
-    """Extracts the core File ID from a standard Frame.io share link."""
-    if "view/" in url:
-        return url.split("view/")[-1].split("/")[0].split("?")[0]
-    elif len(url) == 36 and "-" in url:
-        return url
+    """Extracts the core File ID from ANY Frame.io link."""
+    # If someone pastes a short link (f.io), unroll it first
+    if "f.io" in url:
+        try:
+            response = requests.head(url, allow_redirects=True)
+            url = response.url
+        except Exception:
+            return None
+
+    # Chop the URL into pieces and hunt for the 36-character ID
+    parts = url.replace("?", "/").split("/")
+    for part in reversed(parts):
+        if len(part) == 36 and part.count("-") == 4:
+            return part
+            
     return None
 
 # --- UI FRONTEND ---
